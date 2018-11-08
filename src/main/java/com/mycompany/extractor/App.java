@@ -26,6 +26,7 @@ public class App {
 //        write_data();
         read_data();
         write_data_csv();
+//        analyze();
     }
 
     private static void write_data() {
@@ -46,8 +47,8 @@ public class App {
         Loader.load_users_file(users);
         Loader.load_tweets_file(tweets);
     }
-    
-    private static void write_data_csv(){
+
+    private static void write_data_csv() {
         Loader.write_users_csv();
         Loader.write_tweets_csv();
     }
@@ -59,5 +60,9 @@ public class App {
         } catch (IOException ex) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private static void analyze() {
+        Connector.analyze_tweets();
     }
 }

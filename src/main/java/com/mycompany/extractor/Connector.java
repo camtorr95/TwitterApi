@@ -23,6 +23,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mycompany.extractor.model.Tweet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class Document {
 
@@ -112,18 +115,37 @@ public class Connector {
         return gson.toJson(json);
     }
 
-    public static void main(String[] args) {
+    public static void analyze_tweets() {
+        List<Tweet> tweets = Loader.getTweets();
+        Documents documents = new Documents();
+        tweets.forEach(tweet -> documents.add(String.valueOf(tweet.getId()), "es", tweet.getText()));
         try {
-            Documents documents = new Documents();
-            documents.add("1", "en", "I really enjoy the new XBox One S. It has a clean look, it has 4K/HDR resolution and it is affordable.");
-            documents.add("2", "es", "Este ha sido un dia terrible, llegué tarde al trabajo debido a un accidente automobilistico.");
-
-            String response = get_sentiment(documents);
-            String rta = get_keyphrases(documents);
-            System.out.println(prettify(response));
-            System.out.println(prettify(rta));
-        } catch (Exception e) {
-            System.out.println(e);
+            write_response(get_sentiment(documents), "sentiment");
+            write_response(get_keyphrases(documents), "keyphrases");
+        } catch (Exception ex) {
+            Logger.getLogger(Connector.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+
+    private static void write_response(String response, String service) throws IOException {
+        File file = new File("analisis/analisis_" + service + ".data");
+        BufferedWriter out = new BufferedWriter(new FileWriter(file));
+        out.write(prettify(response));
+        out.write("\n");
+    }
+
+//    public static void main(String[] args) {
+//        try {
+//            Documents documents = new Documents();
+//            documents.add("1", "en", "I really enjoy the new XBox One S. It has a clean look, it has 4K/HDR resolution and it is affordable.");
+//            documents.add("2", "es", "Este ha sido un dia terrible, llegué tarde al trabajo debido a un accidente automobilistico.");
+//            
+//            String response = get_sentiment(documents);
+//            String rta = get_keyphrases(documents);
+//            System.out.println(prettify(response));
+//            System.out.println(prettify(rta));
+//        } catch (Exception e) {
+//            System.out.println(e);
+//        }
+//    }
 }
