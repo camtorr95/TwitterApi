@@ -50,10 +50,9 @@ public class Keyphrase implements Serializable {
 
     @Override
     public String toString() {
-//        StringBuilder sb = new StringBuilder();
-//        this.filter();
-//        keyPhrases.forEach(kp -> sb.append(String.format("%d,%s%n", tweet_id, kp)));
-//        return sb.toString();
-        return keyPhrases.size() + "";
+        StringBuilder sb = new StringBuilder();
+        this.filter();
+        keyPhrases.forEach(kp -> sb.append(String.format("%d,%s%n", tweet_id, kp)));
+        return sb.toString();
     }
 }
