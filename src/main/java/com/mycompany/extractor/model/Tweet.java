@@ -101,7 +101,7 @@ public class Tweet {
     public String toString() {
 //        String json_format = "{text:\"%s\",source:\"%s\",user:%d,id:%d,date:%s,is_retweet:%b,id_retweeted:%d,retweet_count:%d}";
 //        String data_format = "\"%s\"~~\"%s\"~~%d~~%d~~%s~~%b~~%d~~%d";
-        String data_format = "%s,%s,%d,%d,%s,%b,%d,%d";
+        String data_format = "%s,%s,%d,%d,%s,%b,%d,%d%n";
         return String.format(data_format, text, source, user, id, date, is_retweet, id_retweeted, retweet_count);
     }
 }

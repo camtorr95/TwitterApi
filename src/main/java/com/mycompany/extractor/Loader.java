@@ -76,7 +76,7 @@ public class Loader {
         try {
             String[] props = tweet.split("~~");
             DateFormat df = new SimpleDateFormat("EEE MMM dd HH:mm:ss Z yyyy", new Locale("us"));
-            Tweet new_tweet = new Tweet(props[0], props[1], Long.parseLong(props[2]), Long.parseLong(props[3]), df.parse(props[4]), Boolean.parseBoolean(props[5]), Long.parseLong(props[6]), Integer.parseInt(props[7]));
+            Tweet new_tweet = new Tweet(props[0].replace("\n", "").replace("\r", ""), props[1], Long.parseLong(props[2]), Long.parseLong(props[3]), df.parse(props[4]), Boolean.parseBoolean(props[5]), Long.parseLong(props[6]), Integer.parseInt(props[7]));
             TWEETS.put(new_tweet.getId(), new_tweet);
         } catch (ParseException ex) {
             Logger.getLogger(Loader.class.getName()).log(Level.SEVERE, null, ex);
@@ -87,6 +87,8 @@ public class Loader {
         try {
             File users = new File("data/users.csv");
             BufferedWriter out = new BufferedWriter(new FileWriter(users));
+            String header = "id,name,location\n";
+            out.write(header);
             get_users().forEach(user -> write_user(out, user));
             out.close();
         } catch (IOException ex) {
@@ -98,6 +100,8 @@ public class Loader {
         try {
             File tweets = new File("data/tweets.csv");
             BufferedWriter out = new BufferedWriter(new FileWriter(tweets));
+            String header = "text,source,user,id,date,is_retweet,id_retweeted,retweet_count\n";
+            out.write(header);
             getTweets().forEach(tweet -> write_tweet(out, tweet));
             out.close();
         } catch (IOException ex) {
@@ -108,7 +112,6 @@ public class Loader {
     private static void write_user(BufferedWriter out, User user) {
         try {
             out.write(user.toString());
-            out.write("\n");
         } catch (IOException ex) {
             Logger.getLogger(Loader.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -117,7 +120,6 @@ public class Loader {
     private static void write_tweet(BufferedWriter out, Tweet tweet) {
         try {
             out.write(tweet.toString());
-            out.write("\n");
         } catch (IOException ex) {
             Logger.getLogger(Loader.class.getName()).log(Level.SEVERE, null, ex);
         }
