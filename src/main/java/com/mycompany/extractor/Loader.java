@@ -138,7 +138,7 @@ public class Loader {
         try {
             File keyphrases = new File("data/keyphrases.csv");
             BufferedWriter out = new BufferedWriter(new FileWriter(keyphrases));
-            String header = "tweet_id,keyword,value\n";
+            String header = "tweet_id,keyword\n";
             out.write(header);
             get_keyphrases().forEach(kp -> write_keyphrase(out, kp));
             out.close();
