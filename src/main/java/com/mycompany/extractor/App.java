@@ -22,8 +22,10 @@ public class App {
     private static final String[] QUERYS = {"sitp", "transmilenio", "transporte publico bogota"};
 
     public static void main(String[] args) {
-        Arrays.asList(QUERYS).forEach(q -> Extractor.search_data(q));
-        write_data();
+//        Arrays.asList(QUERYS).forEach(q -> Extractor.search_data(q));
+//        write_data();
+        read_data();
+        write_data_csv();
     }
 
     private static void write_data() {
@@ -38,9 +40,22 @@ public class App {
         }
     }
 
+    private static void read_data() {
+        File users = new File("data/users.data");
+        File tweets = new File("data/tweets.data");
+        Loader.load_users_file(users);
+        Loader.load_tweets_file(tweets);
+    }
+    
+    private static void write_data_csv(){
+        Loader.write_users_csv();
+        Loader.write_tweets_csv();
+    }
+
     private static void write_object(BufferedWriter out, Object o) {
         try {
             out.write(o.toString());
+            out.write("==");
         } catch (IOException ex) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -47,7 +47,9 @@ public class User {
 
     @Override
     public String toString() {
-        String format = "{id:%d,name:\"%s\",location:\"%s\"}";
-        return String.format(format, id, name, location);
+//        String data_format = "{id:%d,name:\"%s\",location:\"%s\"}";
+        String data_format = "%d,%s,%s";
+//        String data_format = "%d~~\"%s\"~~\"%s\"";
+        return String.format(data_format, id, name, location);
     }
 }
