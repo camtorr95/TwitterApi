@@ -5,6 +5,8 @@
  */
 package com.mycompany.extractor;
 
+import com.mycompany.extractor.model.Keyphrase;
+import com.mycompany.extractor.model.Sentiment;
 import com.mycompany.extractor.model.Tweet;
 import com.mycompany.extractor.model.User;
 import java.io.BufferedWriter;
@@ -31,6 +33,8 @@ public class Loader {
 
     private final static HashMap<Long, User> USERS = new HashMap<>();
     private final static HashMap<Long, Tweet> TWEETS = new HashMap<>();
+    private final static HashMap<Long, Sentiment> SENTIMENTS = new HashMap<>();
+    private final static HashMap<Long, Keyphrase> KEYPHRASES = new HashMap<>();
 
     public static void load_user(User user) {
         USERS.putIfAbsent(user.getId(), user);
@@ -38,6 +42,14 @@ public class Loader {
 
     public static void load_tweet(Tweet tw) {
         TWEETS.putIfAbsent(tw.getId(), tw);
+    }
+
+    public static void load_sentiment(Sentiment st) {
+        SENTIMENTS.putIfAbsent(Long.parseLong(st.getId()), st);
+    }
+
+    public static void load_keyphrase(Keyphrase kp) {
+        KEYPHRASES.putIfAbsent(Long.parseLong(kp.getId()), kp);
     }
 
     public static void load_users_file(File file) {
@@ -76,7 +88,7 @@ public class Loader {
         try {
             String[] props = tweet.split("~~");
             DateFormat df = new SimpleDateFormat("EEE MMM dd HH:mm:ss Z yyyy", new Locale("us"));
-            Tweet new_tweet = new Tweet(props[0].replace("\n", "").replace("\r", ""), props[1], Long.parseLong(props[2]), Long.parseLong(props[3]), df.parse(props[4]), Boolean.parseBoolean(props[5]), Long.parseLong(props[6]), Integer.parseInt(props[7]));
+            Tweet new_tweet = new Tweet(props[0].replace("\n", "").replace("\r", "").replaceAll("\\,", " "), props[1], Long.parseLong(props[2]), Long.parseLong(props[3]), df.parse(props[4]), Boolean.parseBoolean(props[5]), Long.parseLong(props[6]), Integer.parseInt(props[7]));
             TWEETS.put(new_tweet.getId(), new_tweet);
         } catch (ParseException ex) {
             Logger.getLogger(Loader.class.getName()).log(Level.SEVERE, null, ex);
@@ -109,6 +121,48 @@ public class Loader {
         }
     }
 
+    public static void write_sentiments_csv() {
+        try {
+            File tweets = new File("data/sentiments.csv");
+            BufferedWriter out = new BufferedWriter(new FileWriter(tweets));
+            String header = "tweet_id,score,value\n";
+            out.write(header);
+            get_sentiments().forEach(st -> write_sentiment(out, st));
+            out.close();
+        } catch (IOException ex) {
+            Logger.getLogger(Loader.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public static void write_keyphrases_csv() {
+        try {
+            File keyphrases = new File("data/keyphrases.csv");
+            BufferedWriter out = new BufferedWriter(new FileWriter(keyphrases));
+            String header = "tweet_id,keyword,value\n";
+            out.write(header);
+            get_keyphrases().forEach(kp -> write_keyphrase(out, kp));
+            out.close();
+        } catch (IOException ex) {
+            Logger.getLogger(Loader.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private static void write_keyphrase(BufferedWriter out, Keyphrase kp) {
+        try {
+            out.write(kp.toString());
+        } catch (IOException ex) {
+            Logger.getLogger(Loader.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private static void write_sentiment(BufferedWriter out, Sentiment st) {
+        try {
+            out.write(st.toString());
+        } catch (IOException ex) {
+            Logger.getLogger(Loader.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
     private static void write_user(BufferedWriter out, User user) {
         try {
             out.write(user.toString());
@@ -128,6 +182,16 @@ public class Loader {
     public static List<User> get_users() {
         System.out.println("Users: " + USERS.size());
         return USERS.values().stream().collect(toList());
+    }
+
+    public static List<Sentiment> get_sentiments() {
+        System.out.println("Sentiments: " + SENTIMENTS.size());
+        return SENTIMENTS.values().stream().collect(toList());
+    }
+
+    public static List<Keyphrase> get_keyphrases() {
+        System.out.println("Keyphrases: " + KEYPHRASES.size());
+        return KEYPHRASES.values().stream().collect(toList());
     }
 
     public static List<Tweet> getTweets() {

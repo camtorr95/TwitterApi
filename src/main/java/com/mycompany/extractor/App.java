@@ -25,8 +25,8 @@ public class App {
 //        Arrays.asList(QUERYS).forEach(q -> Extractor.search_data(q));
 //        write_data();
         read_data();
+        analyze();
         write_data_csv();
-//        analyze();
     }
 
     private static void write_data() {
@@ -49,8 +49,10 @@ public class App {
     }
 
     private static void write_data_csv() {
-        Loader.write_users_csv();
-        Loader.write_tweets_csv();
+//        Loader.write_users_csv();
+//        Loader.write_tweets_csv();
+//        Loader.write_sentiments_csv();
+        Loader.write_keyphrases_csv();
     }
 
     private static void write_object(BufferedWriter out, Object o) {
@@ -63,6 +65,6 @@ public class App {
     }
 
     private static void analyze() {
-        Connector.analyze_tweets();
+        Connector.analyze();
     }
 }

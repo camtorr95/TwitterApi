@@ -23,15 +23,20 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mycompany.extractor.model.Keyphrase;
+import com.mycompany.extractor.model.Sentiment;
 import com.mycompany.extractor.model.Tweet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 
 class Document {
-    
+
     public String id, language, text;
-    
+
     public Document(String id, String language, String text) {
         this.id = id;
         this.language = language;
@@ -40,13 +45,13 @@ class Document {
 }
 
 class Documents {
-    
+
     public List<Document> documents;
-    
+
     public Documents() {
-        this.documents = new ArrayList<Document>();
+        this.documents = new ArrayList<>();
     }
-    
+
     public void add(String id, String language, String text) {
         this.documents.add(new Document(id, language, text));
     }
@@ -67,86 +72,162 @@ public class Connector {
 // NOTE: Free trial access keys are generated in the westcentralus region, so if you are using
 // a free trial access key, you should not need to change this region.
     static String host = "https://eastus.api.cognitive.microsoft.com";
-    
+
     static String path_sentiment = "/text/analytics/v2.0/sentiment";
     static String path_keyphrases = "/text/analytics/v2.0/keyPhrases";
-    
-    public static String get_sentiment(Documents documents) throws Exception {
+
+    private static BufferedReader in = null;
+    private static HttpsURLConnection connection = null;
+
+    private static List<Tweet> tweets = Loader.getTweets().stream().filter(t -> !t.isIs_retweet()).collect(toList());
+
+    private static int counter = 0;
+
+    private static void get_sentiment(Documents documents, StringBuilder response) throws Exception {
         String text = new Gson().toJson(documents);
         byte[] encoded_text = text.getBytes("UTF-8");
-        
-        return connectApi(encoded_text, new URL(host + path_sentiment));
-    }
-    
-    public static String get_keyphrases(Documents documents) throws Exception {
-        String text = new Gson().toJson(documents);
-        byte[] encoded_text = text.getBytes("UTF-8");
-        
-        return connectApi(encoded_text, new URL(host + path_keyphrases));
-    }
-    
-    private static String connectApi(byte[] encoded_text, URL url) throws Exception {
-        HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+
+        URL url = new URL(host + path_sentiment);
+        connection = (HttpsURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "text/json");
         connection.setRequestProperty("Ocp-Apim-Subscription-Key", accessKey);
         connection.setDoOutput(true);
-        
+
         DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
         wr.write(encoded_text, 0, encoded_text.length);
         wr.flush();
         wr.close();
-        
-        StringBuilder response = new StringBuilder();
-        BufferedReader in = new BufferedReader(
+
+        in = new BufferedReader(
                 new InputStreamReader(connection.getInputStream()));
         String line;
         while ((line = in.readLine()) != null) {
             response.append(line);
         }
-        in.close();
-        
-        return response.toString();
     }
-    
+    private static void get_keyphrase(Documents documents, StringBuilder response) throws Exception {
+        String text = new Gson().toJson(documents);
+        byte[] encoded_text = text.getBytes("UTF-8");
+
+        URL url = new URL(host + path_keyphrases);
+        connection = (HttpsURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "text/json");
+        connection.setRequestProperty("Ocp-Apim-Subscription-Key", accessKey);
+        connection.setDoOutput(true);
+
+        DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+        wr.write(encoded_text, 0, encoded_text.length);
+        wr.flush();
+        wr.close();
+
+        in = new BufferedReader(
+                new InputStreamReader(connection.getInputStream()));
+        String line;
+        while ((line = in.readLine()) != null) {
+            response.append(line);
+        }
+    }
+
     public static String prettify(String json_text) {
         JsonParser parser = new JsonParser();
         JsonObject json = parser.parse(json_text).getAsJsonObject();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         return gson.toJson(json);
     }
-    
-    public static void analyze_tweets() {
-        List<Tweet> tweets = Loader.getTweets().stream().filter(t -> !t.isIs_retweet()).collect(toList());
-        Documents documents = new Documents();
-        tweets.forEach(tweet -> documents.add(String.valueOf(tweet.getId()), "es", tweet.getText()));
+
+    private static List<Response> responses = new LinkedList<>();
+
+    private static void gson_map(String response) {
+        Gson gson = new Gson();
+        Response resp = gson.fromJson(response, Response.class);
+        responses.add(resp);
+        System.out.println(resp.toString());
+    }
+
+    public static void analyze() {
+        AtomicInteger count = new AtomicInteger(0);
+//        sentiment_analysis();
+//        responses.forEach(r -> r.getDocuments().forEach(st -> st.setTweet_id(tweets.get(count.getAndIncrement()).getId())));
+//        responses.forEach(r -> r.getDocuments().forEach(Loader::load_sentiment));
+        keyphrase_analysis();
+        responses.forEach(r -> r.getDocuments().forEach(kp -> kp.setTweet_id(tweets.get(count.getAndIncrement()).getId())));
+        responses.forEach(r -> r.getDocuments().forEach(Loader::load_keyphrase));
+    }
+
+    private static void sentiment_analysis() {
         try {
-            write_response(get_sentiment(documents), "sentiment");
-            write_response(get_keyphrases(documents), "keyphrases");
+            for (int i = 0; i < 5000; i += 500) {
+                sentiment_run(tweets.subList(i, i + 500));
+            }
+            sentiment_run(tweets.subList(5000, 5482));
+            in.close();
+            in = null;
+        } catch (IOException ex) {
+            Logger.getLogger(Connector.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private static void keyphrase_analysis() {
+        try {
+            for (int i = 0; i < 5000; i += 500) {
+                keyphrase_run(tweets.subList(i, i + 500));
+            }
+            keyphrase_run(tweets.subList(5000, 5482));
+            in.close();
+            in = null;
+        } catch (IOException ex) {
+            Logger.getLogger(Connector.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private static void keyphrase_run(List<Tweet> tweets) {
+        StringBuilder response = new StringBuilder();
+        try {
+            Documents documents = new Documents();
+            tweets.forEach(t -> documents.add(String.valueOf(t.getId()), "es", t.getText()));
+            get_keyphrase(documents, response);
+            System.out.println(response);
+            gson_map(response.toString());
+            TimeUnit.MILLISECONDS.sleep(100);
         } catch (Exception ex) {
             Logger.getLogger(Connector.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-    private static void write_response(String response, String service) throws IOException {
-        File file = new File("analisis/analisis_" + service + ".data");
-        BufferedWriter out = new BufferedWriter(new FileWriter(file));
-        out.write(prettify(response));
-        out.write("\n");
+    private static void sentiment_run(List<Tweet> tweets) {
+        StringBuilder response = new StringBuilder();
+        try {
+            Documents documents = new Documents();
+            tweets.forEach(t -> documents.add(String.valueOf(t.getId()), "es", t.getText()));
+            get_sentiment(documents, response);
+            gson_map(response.toString());
+            TimeUnit.MILLISECONDS.sleep(100);
+        } catch (Exception ex) {
+            Logger.getLogger(Connector.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
-//    public static void main(String[] args) {
-//        try {
-//            Documents documents = new Documents();
-//            documents.add("1", "en", "I really enjoy the new XBox One S. It has a clean look, it has 4K/HDR resolution and it is affordable.");
-//            documents.add("2", "es", "Este ha sido un dia terrible, llegué tarde al trabajo debido a un accidente automobilistico.");
-//            
-//            String response = get_sentiment(documents);
-//            String rta = get_keyphrases(documents);
-//            System.out.println(prettify(response));
-//            System.out.println(prettify(rta));
-//        } catch (Exception e) {
-//            System.out.println(e);
-//        }
-//    }
+    class Response {
+
+        private List<Keyphrase> documents;
+        private List<String> errors;
+
+        public List<Keyphrase> getDocuments() {
+            return documents;
+        }
+
+        public void setDocuments(List<Keyphrase> documents) {
+            this.documents = documents;
+        }
+
+        public List<String> getErrors() {
+            return errors;
+        }
+
+        public void setErrors(List<String> errors) {
+            this.errors = errors;
+        }
+    }
 }
