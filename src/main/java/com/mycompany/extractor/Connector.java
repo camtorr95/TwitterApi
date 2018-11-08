@@ -26,11 +26,12 @@ import com.google.gson.JsonParser;
 import com.mycompany.extractor.model.Tweet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static java.util.stream.Collectors.toList;
 
 class Document {
-
+    
     public String id, language, text;
-
+    
     public Document(String id, String language, String text) {
         this.id = id;
         this.language = language;
@@ -39,13 +40,13 @@ class Document {
 }
 
 class Documents {
-
+    
     public List<Document> documents;
-
+    
     public Documents() {
         this.documents = new ArrayList<Document>();
     }
-
+    
     public void add(String id, String language, String text) {
         this.documents.add(new Document(id, language, text));
     }
@@ -66,36 +67,36 @@ public class Connector {
 // NOTE: Free trial access keys are generated in the westcentralus region, so if you are using
 // a free trial access key, you should not need to change this region.
     static String host = "https://eastus.api.cognitive.microsoft.com";
-
+    
     static String path_sentiment = "/text/analytics/v2.0/sentiment";
     static String path_keyphrases = "/text/analytics/v2.0/keyPhrases";
-
+    
     public static String get_sentiment(Documents documents) throws Exception {
         String text = new Gson().toJson(documents);
         byte[] encoded_text = text.getBytes("UTF-8");
-
+        
         return connectApi(encoded_text, new URL(host + path_sentiment));
     }
-
+    
     public static String get_keyphrases(Documents documents) throws Exception {
         String text = new Gson().toJson(documents);
         byte[] encoded_text = text.getBytes("UTF-8");
-
+        
         return connectApi(encoded_text, new URL(host + path_keyphrases));
     }
-
+    
     private static String connectApi(byte[] encoded_text, URL url) throws Exception {
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "text/json");
         connection.setRequestProperty("Ocp-Apim-Subscription-Key", accessKey);
         connection.setDoOutput(true);
-
+        
         DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
         wr.write(encoded_text, 0, encoded_text.length);
         wr.flush();
         wr.close();
-
+        
         StringBuilder response = new StringBuilder();
         BufferedReader in = new BufferedReader(
                 new InputStreamReader(connection.getInputStream()));
@@ -104,19 +105,19 @@ public class Connector {
             response.append(line);
         }
         in.close();
-
+        
         return response.toString();
     }
-
+    
     public static String prettify(String json_text) {
         JsonParser parser = new JsonParser();
         JsonObject json = parser.parse(json_text).getAsJsonObject();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         return gson.toJson(json);
     }
-
+    
     public static void analyze_tweets() {
-        List<Tweet> tweets = Loader.getTweets();
+        List<Tweet> tweets = Loader.getTweets().stream().filter(t -> !t.isIs_retweet()).collect(toList());
         Documents documents = new Documents();
         tweets.forEach(tweet -> documents.add(String.valueOf(tweet.getId()), "es", tweet.getText()));
         try {
