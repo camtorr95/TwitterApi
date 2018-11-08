@@ -5,6 +5,7 @@
  */
 package com.mycompany.extractor.model;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -102,6 +103,7 @@ public class Tweet {
 //        String json_format = "{text:\"%s\",source:\"%s\",user:%d,id:%d,date:%s,is_retweet:%b,id_retweeted:%d,retweet_count:%d}";
 //        String data_format = "\"%s\"~~\"%s\"~~%d~~%d~~%s~~%b~~%d~~%d";
         String data_format = "%s,%s,%d,%d,%s,%b,%d,%d%n";
-        return String.format(data_format, text, source, user, id, date, is_retweet, id_retweeted, retweet_count);
+        SimpleDateFormat datef = new SimpleDateFormat("dd/MM/yyyy");
+        return String.format(data_format, text, source, user, id, datef.format(date), is_retweet, id_retweeted, retweet_count);
     }
 }
